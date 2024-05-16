@@ -84,6 +84,28 @@ contract Messenger is Ownable, GasUsage, IMessenger {
         emit MessageSent(messageWithSender);
     }
 
+    function sendMessageTron(bytes32 message) external payable {
+        require(uint8(message[0]) == chainId, "Messenger: wrong chainId");
+        require(otherChainIds[uint8(message[1])] != 0, "Messenger: wrong destination");
+
+        bytes32 messageWithSender = message.hashWithSender(message);
+
+        require(sentMessagesBlock[messageWithSender] == 0, "Messenger: has message");
+        sentMessagesBlock[messageWithSender] = block.number;
+
+        require(msg.value >= this.getTransactionCost(uint8(message[1])), "Messenger: not enough fee");
+
+        emit MessageSent(messageWithSender);
+    }
+
+    function msgSender() external view returns (address) {
+        return msg.sender;
+    } 
+
+    function msgSenderAddr() external view returns (address) {
+        return address(msg.sender);
+    }
+
     /**
      * @notice Delivers a message to the destination chain.
      * @dev Emits an {MessageReceived} event indicating the message has been delivered.
@@ -111,6 +133,60 @@ contract Messenger is Ownable, GasUsage, IMessenger {
         receivedMessages[message] = 1;
 
         emit MessageReceived(message);
+    }
+
+    function verifyMessage(
+        bytes32 message,
+        bytes memory signature1
+    ) external {
+        bytes32 hashedMessage = message.getEthSignedMessageHash();
+        (bytes32 r1, bytes32 s1, uint8 v1) = splitSignature(signature1);
+        require(ecrecover(hashedMessage, v1, r1, s1) == primaryValidator, "Messenger: invalid primary");
+
+        require(uint8(message[1]) == chainId, "Messenger: wrong chainId");
+
+        receivedMessages[message] = 1;
+
+        emit MessageReceived(message);
+    }
+
+    function verifyMessageTron(
+        bytes32 message,
+        bytes memory signature1
+    ) external {
+        bytes32 hashedMessage = message.getTronSignedMessageHash();
+        (bytes32 r1, bytes32 s1, uint8 v1) = splitSignature(signature1);
+        require(ecrecover(hashedMessage, v1, r1, s1) == primaryValidator, "Messenger: invalid primary");
+
+        require(uint8(message[1]) == chainId, "Messenger: wrong chainId");
+
+        receivedMessages[message] = 1;
+
+        emit MessageReceived(message);
+    }
+
+    function splitSignature(
+        bytes memory sig
+    ) public pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(sig.length == 65, "invalid signature length");
+
+        assembly {
+            /*
+            First 32 bytes stores the length of the signature
+
+            add(sig, 32) = pointer of sig + 32
+            effectively, skips first 32 bytes of signature
+
+            mload(p) loads next 32 bytes starting at the memory address p into memory
+            */
+
+            // first 32 bytes, after the length prefix
+            r := mload(add(sig, 32))
+            // second 32 bytes
+            s := mload(add(sig, 64))
+            // final byte (first byte of the next 32 bytes)
+            v := byte(0, mload(add(sig, 96)))
+        }
     }
 
     /**

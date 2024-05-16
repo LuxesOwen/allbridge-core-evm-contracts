@@ -44,6 +44,8 @@ const config: HardhatUserConfig = {
     sepolia: baseNetwork,
     bsc: baseNetwork,
     arbitrumGoerli: baseNetwork,
+    algen: baseNetwork,
+    algenl2: baseNetwork
   },
   gasReporter: {
     enabled: !!process.env.NODE_GAS,

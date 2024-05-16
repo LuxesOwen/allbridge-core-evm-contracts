@@ -79,10 +79,32 @@ abstract contract Router is Ownable, IRouter {
         bytes32 receiveToken,
         address recipient,
         uint receiveAmountMin
-    ) external override whenCanSwap {
+    ) external payable override whenCanSwap {
+        if (address(uint160(uint(token))) == address(0)) {
+            require(amount == msg.value, "Router: incorrect swap value");
+        }
         uint vUsdAmount = _sendAndSwapToVUsd(token, msg.sender, amount);
         uint receivedAmount = _receiveAndSwapFromVUsd(receiveToken, recipient, vUsdAmount, receiveAmountMin);
         emit Swapped(msg.sender, recipient, token, receiveToken, amount, receivedAmount);
+    }
+
+    function getSwapValue(
+        uint fromAmount,
+        bytes32 fromToken,
+        bytes32 toToken
+    ) public pure returns (uint toAmount) {
+        address fromTokenAddresss = address(uint160(uint(fromToken)));
+        address toTokenAddress = address(uint160(uint(toToken)));
+        require(fromTokenAddresss != address(0) || toTokenAddress != address(0), "Router: all native token");
+        if (fromTokenAddresss == address(0)) {
+            // native token to USD
+            toAmount = fromAmount / (10 ** 12) / 5;
+        } else if (toTokenAddress == address(0)) {
+            // USD to native token
+            toAmount = fromAmount * (10 ** 12) * 5;
+        } else {
+            toAmount = fromAmount;
+        }
     }
 
     /**
@@ -94,7 +116,10 @@ abstract contract Router is Ownable, IRouter {
     function addPool(Pool pool, bytes32 token) external onlyOwner {
         pools[token] = pool;
         address tokenAddress = address(uint160(uint(token)));
-        uint tokenDecimals = ERC20(tokenAddress).decimals();
+        uint tokenDecimals = 18;
+        if (tokenAddress != address(0)) {
+            tokenDecimals = ERC20(tokenAddress).decimals();
+        }
         bridgingFeeConversionScalingFactor[tokenAddress] = 10 ** (ORACLE_PRECISION - tokenDecimals + chainPrecision);
         fromGasOracleScalingFactor[tokenAddress] = 10 ** (ORACLE_PRECISION - tokenDecimals);
     }
@@ -135,13 +160,26 @@ abstract contract Router is Ownable, IRouter {
     ) internal returns (uint) {
         Pool tokenPool = pools[token];
         require(address(tokenPool) != address(0), "Router: no receive pool");
+        if (address(uint160(uint(token))) == address(0)) {
+            vUsdAmount = getSwapValue(vUsdAmount, bytes32(uint256(uint160(address(1))) << 96), token);
+        }
         return tokenPool.swapFromVUsd(recipient, vUsdAmount, receiveAmountMin, recipient == rebalancer);
     }
 
     function _sendAndSwapToVUsd(bytes32 token, address user, uint amount) internal virtual returns (uint) {
         Pool pool = pools[token];
         require(address(pool) != address(0), "Router: no pool");
-        ERC20(address(uint160(uint(token)))).safeTransferFrom(user, address(pool), amount);
-        return pool.swapToVUsd(user, amount, user == rebalancer);
+        address tokenAddress = address(uint160(uint(token)));
+        if (tokenAddress == address(0)) {
+            (bool success, ) = payable(pool).call{value: amount}("");
+            require(success, "Router: native token transfer failed");
+        } else {
+            ERC20(address(uint160(uint(token)))).safeTransferFrom(user, address(pool), amount);
+        }
+        uint vUsdAmount = pool.swapToVUsd(user, amount, user == rebalancer);
+        if (tokenAddress == address(0)) {
+            vUsdAmount = getSwapValue(vUsdAmount, token, bytes32(uint256(uint160(address(1))) << 96));
+        }
+        return vUsdAmount;
     }
 }

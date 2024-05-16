@@ -2,7 +2,7 @@ const Contract = artifacts.require('./Token.sol');
 
 module.exports = function (deployer) {
   const name = 'Yaroslav Stable Token';
-  const symbol = 'USDY';
+  const symbol = 'YARO';
   const amount = '1000000000' + '0'.repeat(18);
 
   deployer.deploy(Contract, name, symbol, amount, 18);

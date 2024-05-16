@@ -55,4 +55,30 @@ library HashUtils {
             result := keccak256(0x00, 0x20)
         }
     }
+
+    function getEthSignedMessageHash(
+        bytes32 _messageHash
+    ) internal pure returns (bytes32) {
+        /*
+        Signature is produced by signing a keccak256 hash with the following format:
+        "\x19Ethereum Signed Message\n" + len(msg) + msg
+        */
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash)
+            );
+    }
+
+    function getTronSignedMessageHash(
+        bytes32 _messageHash
+    ) internal pure returns (bytes32) {
+        /*
+        Signature is produced by signing a keccak256 hash with the following format:
+        "\x19Ethereum Signed Message\n" + len(msg) + msg
+        */
+        return
+            keccak256(
+                abi.encodePacked("\x19TRON Signed Message:\n32", _messageHash)
+            );
+    }
 }

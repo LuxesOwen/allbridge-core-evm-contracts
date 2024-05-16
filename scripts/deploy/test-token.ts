@@ -11,10 +11,10 @@ async function main() {
   // );
 
   const contract = await Contract.deploy(
-    'YARO',
-    'YARO',
-    '1000000000' + '0'.repeat(18),
-    18,
+    'USDC',
+    'USDC',
+    '10000000000' + '0'.repeat(6),
+    6,
   );
   await handleDeployResult(contract);
 }

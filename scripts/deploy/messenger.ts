@@ -13,7 +13,10 @@ async function main() {
     0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0,
   ]);
-  otherChainIds[chainId] = 0;
+  // otherChainIds[chainId] = 0;
+  // set Algen chainId
+
+  // set Tron chainId
 
   const Contract = await ethers.getContractFactory('Messenger');
   const contract = await Contract.deploy(

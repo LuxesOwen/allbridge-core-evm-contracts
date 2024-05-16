@@ -1,4 +1,4 @@
-const { callContract, tronAddressToBuffer32 } = require('../helper');
+const { callContract, tronAddressToBytes32 } = require('../helper');
 
 (async function () {
   const bridgeAddress = process.env.BRIDGE_ADDRESS;
@@ -21,7 +21,8 @@ const { callContract, tronAddressToBuffer32 } = require('../helper');
     bridgeAddress,
     'addPool',
     poolAddress,
-    tronAddressToBuffer32(tokenAddress),
+    // tronAddressToBuffer32(tokenAddress),
+    tronAddressToBytes32(tokenAddress)
   );
   console.log(result);
 })();

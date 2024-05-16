@@ -14,13 +14,6 @@ function hexToBuffer(hex) {
   return Buffer.from(hex.replace(/^0x/i, ''), 'hex');
 }
 
-function getNetwork() {
-  const keyIndex = process.argv.indexOf('--network');
-  if (keyIndex >= 0) {
-    return process.argv[keyIndex + 1];
-  }
-}
-
 function bufferToSize(buffer, size) {
   if (buffer.length >= size) {
     return buffer;
@@ -28,6 +21,13 @@ function bufferToSize(buffer, size) {
   const result = Buffer.alloc(size, 0);
   buffer.copy(result, size - buffer.length);
   return result;
+}
+
+function getNetwork() {
+  const keyIndex = process.argv.indexOf('--network');
+  if (keyIndex >= 0) {
+    return process.argv[keyIndex + 1];
+  }
 }
 
 function tronAddressToEthAddress(address) {
@@ -45,6 +45,13 @@ function tronAddressToBuffer32(address) {
   const ethAddress = tronAddressToEthAddress(address);
   const buffer = hexToBuffer(ethAddress);
   return bufferToSize(buffer, 32);
+}
+
+function tronAddressToBytes32(address) {
+  const ethAddress = tronAddressToEthAddress(address);
+  const buffer = hexToBuffer(ethAddress);
+  const sizedBuffer = bufferToSize(buffer, 32);
+  return bufferToHex(sizedBuffer);
 }
 
 function solanaAddressToBytes32(address) {
@@ -72,6 +79,7 @@ async function confirmTransaction(tronWeb, txId) {
       continue;
     }
     if (result.receipt.result === 'SUCCESS') {
+      // console.log("result: ", result)
       return txId;
     } else {
       throw new Error(`Transaction status is ${result.receipt.result}`);
@@ -112,6 +120,7 @@ module.exports = {
     return await contract[method](...args).call();
   },
   tronAddressToBuffer32,
+  tronAddressToBytes32,
   ethAddressToBytes32,
   solanaAddressToBytes32,
   getSignerAddress,

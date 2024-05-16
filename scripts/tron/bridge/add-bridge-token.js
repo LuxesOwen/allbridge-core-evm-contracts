@@ -15,8 +15,8 @@ const {
     bridgeAddress,
     'addBridgeToken',
     5,
-    // ethAddressToBytes32('0x54B79d73d514224379107703C6102D53E321aEFa'),
-    solanaAddressToBytes32('FpGHqNpwDctcaJyu24M9E2ydTe5owPQgD7UdarKEJHd4'),
+    ethAddressToBytes32('0xEC087f1dbB58CBCC38f600b99A3753DAa9d3c023'),
+    // solanaAddressToBytes32('FpGHqNpwDctcaJyu24M9E2ydTe5owPQgD7UdarKEJHd4'),
   );
   console.log(result);
 })();

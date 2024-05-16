@@ -1,9 +1,9 @@
 import { ethers } from 'hardhat';
 import {
-    handleTransactionResult,
-    solanaAddressToBytes32,
-    addressToBytes32,
-    tronAddressToBytes32
+  handleTransactionResult,
+  solanaAddressToBytes32,
+  addressToBytes32,
+  tronAddressToBytes32
 } from '../helper';
 
 async function main() {
@@ -15,10 +15,10 @@ async function main() {
   const contract = await ethers.getContractAt('Bridge', bridgeAddress);
   /* cSpell:disable */
   const result = await contract.registerBridge(
-    5,
-    // tronAddressToBytes32('TQMRDKiDB86vRVBdcQjt6C7RUe1JhXXPMe'),
-    // addressToBytes32('0xba285A8F52601EabCc769706FcBDe2645aa0AF18'),
-    solanaAddressToBytes32('ERrse1kNoZPcY2BjRXQ5rHTCPDPwL1m2NQ2sGSj6cW7C'), // authority address
+    2,
+    // tronAddressToBytes32('TDYdSH11JysLerX4Fdmi143qo65oNafVCB'),
+    addressToBytes32('0xd6df1fdD6eA0f494A717216253d0Ed504e6f35e0'),
+    // solanaAddressToBytes32('ERrse1kNoZPcY2BjRXQ5rHTCPDPwL1m2NQ2sGSj6cW7C'), // authority address
   );
   /* cSpell:enable */
   await handleTransactionResult(result);
