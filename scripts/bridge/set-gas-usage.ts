@@ -10,7 +10,7 @@ async function main() {
   }
 
   const contract = await ethers.getContractAt('Bridge', bridgeAddress);
-  const result = await contract.setGasUsage(5, 3500);
+  const result = await contract.setGasUsage(2, 3500);
   await handleTransactionResult(result);
 }
 

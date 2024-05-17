@@ -40,6 +40,7 @@ contract PoolAUSD is RewardManagerAUSD {
     uint public canDeposit = 1;
     // is withdraw operation allowed
     uint public canWithdraw = 1;
+    uint public usdToAlgRatio = 2;
 
     event SwappedToVUsd(address sender, address token, uint amount, uint vUsdAmount, uint fee);
     event SwappedFromVUsd(address recipient, address token, uint vUsdAmount, uint amount, uint fee);
@@ -80,18 +81,6 @@ contract PoolAUSD is RewardManagerAUSD {
     }
 
     /**
-     * @dev Modifier to prevent function from disbalancing the pool over a threshold defined by `balanceRatioMinBP`
-     */
-    modifier validateBalanceRatio() {
-        _;
-        if (tokenBalance > vUsdBalance) {
-            require((vUsdBalance * BP) / tokenBalance >= balanceRatioMinBP, "Pool: low vUSD balance");
-        } else if (tokenBalance < vUsdBalance) {
-            require((tokenBalance * BP) / vUsdBalance >= balanceRatioMinBP, "Pool: low token balance");
-        }
-    }
-
-    /**
      * @dev Modifier to make a function callable only when the deposit is allowed.
      */
     modifier whenCanDeposit() {
@@ -114,7 +103,7 @@ contract PoolAUSD is RewardManagerAUSD {
      */
     function deposit(uint amount) external payable whenCanDeposit {
         require(amount == msg.value, "Pool: incorrect deposit value");
-        uint oldD = d;
+        // uint oldD = d;
 
         uint amountSP = _toSystemPrecision(amount);
         require(amountSP > 0, "Pool: too little");
@@ -122,22 +111,22 @@ contract PoolAUSD is RewardManagerAUSD {
         // Add deposited amount to reserves
         reserves += amountSP;
 
-        uint oldBalance = (tokenBalance + vUsdBalance);
-        if (oldD == 0 || oldBalance == 0) {
-            // Split balance equally on the first deposit
-            uint halfAmount = amountSP >> 1;
-            tokenBalance += halfAmount;
-            vUsdBalance += halfAmount;
-        } else {
-            // Add amount proportionally to each pool
-            tokenBalance += (amountSP * tokenBalance) / oldBalance;
-            vUsdBalance += (amountSP * vUsdBalance) / oldBalance;
-        }
-        _updateD();
+        // uint oldBalance = (tokenBalance + vUsdBalance);
+        // if (oldD == 0 || oldBalance == 0) {
+        //     // Split balance equally on the first deposit
+        //     uint halfAmount = amountSP >> 1;
+        //     tokenBalance += halfAmount;
+        //     vUsdBalance += halfAmount;
+        // } else {
+        //     // Add amount proportionally to each pool
+        //     tokenBalance += (amountSP * tokenBalance) / oldBalance;
+        //     vUsdBalance += (amountSP * vUsdBalance) / oldBalance;
+        // }
+        // _updateD();
         // Deposit as many LP tokens as the D increase
-        _depositLp(msg.sender, d - oldD);
+        _depositLp(msg.sender, amountSP);
 
-        require(tokenBalance < MAX_TOKEN_BALANCE, "Pool: too much");
+        require(reserves < MAX_TOKEN_BALANCE, "Pool: too much");
     }
 
     /*
@@ -146,28 +135,29 @@ contract PoolAUSD is RewardManagerAUSD {
      * @param amount The deposited amount
      */
     function withdraw(uint amountLp) external whenCanWithdraw {
-        uint oldD = d;
+        // uint oldD = d;
         _withdrawLp(msg.sender, amountLp);
 
         // Always withdraw tokens in amount equal to amountLp
 
         // Withdraw proportionally from token and vUsd balance
-        uint oldBalance = (tokenBalance + vUsdBalance);
-        tokenBalance -= (amountLp * tokenBalance) / oldBalance;
-        vUsdBalance -= (amountLp * vUsdBalance) / oldBalance;
+        // uint oldBalance = (tokenBalance + vUsdBalance);
+        // tokenBalance -= (amountLp * tokenBalance) / oldBalance;
+        // vUsdBalance -= (amountLp * vUsdBalance) / oldBalance;
 
-        require(tokenBalance + vUsdBalance < oldBalance, "Pool: zero changes");
+        // require(tokenBalance + vUsdBalance < oldBalance, "Pool: zero changes");
 
-        // Check if there is enough funds in reserve to withdraw
+        // // Check if there is enough funds in reserve to withdraw
         require(amountLp <= reserves, "Pool: reserves");
 
         // Adjust reserves by withdraw amount
         reserves -= amountLp;
 
         // Update D and transfer tokens to the sender
-        _updateD();
-        require(d < oldD, "Pool: zero D changes");
-        payable(msg.sender).transfer(_fromSystemPrecision(amountLp));
+        // _updateD();
+        // require(d < oldD, "Pool: zero D changes");
+        (bool success, ) = payable(msg.sender).call{value: _fromSystemPrecision(amountLp)}("");
+        require(success, "Pool: withdraw failed");
         // token.safeTransfer(msg.sender, _fromSystemPrecision(amountLp));
     }
 
@@ -184,32 +174,42 @@ contract PoolAUSD is RewardManagerAUSD {
         address user,
         uint amount,
         bool zeroFee
-    ) external onlyRouter validateBalanceRatio returns (uint) {
+    ) external onlyRouter returns (uint) {
         uint result; // 0 by default
         uint fee;
         if (amount > 0) {
-            if (!zeroFee) {
-                fee = (amount * feeShareBP) / BP;
-            }
-            uint amountIn = _toSystemPrecision(amount - fee);
+            uint amountIn = _toSystemPrecision(amount);
+            require(amountIn > 0, "Pool: too little");
+            // if (!zeroFee) {
+            //     fee = (amount * feeShareBP) / BP;
+            // }
+            // uint amountIn = _toSystemPrecision(amount - fee);
             // Incorporate rounding dust into the fee
-            fee = amount - _fromSystemPrecision(amountIn);
+            // fee = amount - _fromSystemPrecision(amountIn);
 
             // Adjust token and reserve balances after the fee is applied
-            tokenBalance += amountIn;
+            // tokenBalance += amountIn;
             reserves += amountIn;
-
-            uint vUsdNewAmount = this.getY(tokenBalance);
-            if (vUsdBalance > vUsdNewAmount) {
-                result = vUsdBalance - vUsdNewAmount;
+            unchecked {
+                adminFeeAmount += amount;
             }
-            vUsdBalance = vUsdNewAmount;
-            _addRewards(fee);
+
+            // uint vUsdNewAmount = this.getY(tokenBalance);
+            // if (vUsdBalance > vUsdNewAmount) {
+            //     result = vUsdBalance - vUsdNewAmount;
+            // }
+            // vUsdBalance = vUsdNewAmount;
+            // _addRewards(fee);
+            result = amountIn * usdToAlgRatio / 10;
         }
 
         emit SwappedToVUsd(user, address(0), amount, result, fee);
         return result;
     }
+
+    function setAlgRatio(uint ratio) external onlyOwner {
+        usdToAlgRatio = ratio;
+    } 
 
     /**
      * @notice Calculates the amount of tokens from the given virtual USD value, and transfers it to the user.
@@ -227,34 +227,41 @@ contract PoolAUSD is RewardManagerAUSD {
         uint amount,
         uint receiveAmountMin,
         bool zeroFee
-    ) external onlyRouter validateBalanceRatio returns (uint) {
+    ) external onlyRouter returns (uint) {
         uint resultSP; // 0 by default
         uint result; // 0 by default
         uint fee;
         if (amount > 0) {
-            vUsdBalance += amount;
-            uint newAmount = this.getY(vUsdBalance);
-            if (tokenBalance > newAmount) {
-                resultSP = tokenBalance - newAmount;
-                result = _fromSystemPrecision(resultSP);
-            } // Otherwise result/resultSP stay 0
+            resultSP = amount * 10 / usdToAlgRatio;
+            // vUsdBalance += amount;
+            // uint newAmount = this.getY(vUsdBalance);
+            // if (tokenBalance > newAmount) {
+            //     resultSP = tokenBalance - newAmount;
+            //     result = _fromSystemPrecision(resultSP);
+            // } // Otherwise result/resultSP stay 0
 
-            // Check if there is enough funds in reserve to pay
+            // // Check if there is enough funds in reserve to pay
             require(resultSP <= reserves, "Pool: reserves");
-            // Remove from reserves including fee, apply fee later
+            // // Remove from reserves including fee, apply fee later
+            // reserves -= resultSP;
+            // if (!zeroFee) {
+            //     fee = (result * feeShareBP) / BP;
+            // }
+            // // We can use unchecked here because feeShareBP <= BP
+            // unchecked {
+            //     result -= fee;
+            // }
             reserves -= resultSP;
-            if (!zeroFee) {
-                fee = (result * feeShareBP) / BP;
-            }
-            // We can use unchecked here because feeShareBP <= BP
-            unchecked {
-                result -= fee;
-            }
-
-            tokenBalance = newAmount;
+            result = _fromSystemPrecision(resultSP);
+            // tokenBalance = newAmount;
             require(result >= receiveAmountMin, "Pool: slippage");
-            payable(user).transfer(result);
-            _addRewards(fee);
+            (bool success, ) = payable(user).call{value: result}("");
+            require(success, "Pool: swap failed");
+            unchecked {
+                adminFeeAmount -= result;
+            }
+            
+            // _addRewards(fee);
         }
         emit SwappedFromVUsd(user, address(0), amount, result, fee);
         return result;

@@ -9,7 +9,7 @@ async function main() {
 
     const contract = await ethers.getContractAt('GasOracle', gasOracleAddress);
     // setChainData(uint chainId_, uint128 price_, uint128 gasPrice)
-    const result = await contract.setChainData(2, 3000, 0.000000001);
+    const result = await contract.setChainData(2, 3000, 21000);
     await handleTransactionResult(result);
 }
 

@@ -7,8 +7,13 @@ async function main() {
   }
 
   const contract = await ethers.getContractAt('GasOracle', gasOracleAddress);
-  const result = await contract.chainData(4);
-  console.log(result);
+  const result1 = await contract.chainData(2);
+  console.log(result1);
+
+  const result2 = await contract.getTransactionGasCostInNativeToken(2, 1);
+  console.log("result: ", result2)
+
+
 }
 
 main().catch((error) => {

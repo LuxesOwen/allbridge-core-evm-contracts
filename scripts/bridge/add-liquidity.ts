@@ -13,28 +13,28 @@ async function main() {
   }
 
   // case 1: AUSD
-  // const bridge = await ethers.getContractAt('Bridge', bridgeAddress);
+  const bridge = await ethers.getContractAt('Bridge', bridgeAddress);
 
-  // const pool = await ethers.getContractAt('Pool', poolAddress);
-  // const token = await ethers.getContractAt('Token', await pool.token());
-  // await handleTransactionResult(
-  //   await token.approve(pool.address, ethers.constants.MaxUint256),
-  // );
-
-  // await handleTransactionResult(
-  //   await token.approve(bridge.address, ethers.constants.MaxUint256),
-  // );
-
-  // await handleTransactionResult(
-  //   await pool.deposit('100000' + '0'.repeat(await token.decimals())),
-  // );
-
-  // case 2: ALG
-  const pool = await ethers.getContractAt('PoolAUSD', poolAddress);
+  const pool = await ethers.getContractAt('Pool', poolAddress);
+  const token = await ethers.getContractAt('Token', await pool.token());
+  await handleTransactionResult(
+    await token.approve(pool.address, ethers.constants.MaxUint256),
+  );
 
   await handleTransactionResult(
-    await pool.deposit('1000' + '0'.repeat(18), { value: '1000' + '0'.repeat(18) }),
+    await token.approve(bridge.address, ethers.constants.MaxUint256),
   );
+
+  await handleTransactionResult(
+    await pool.deposit('100000' + '0'.repeat(await token.decimals())),
+  );
+
+  // case 2: ALG
+  // const pool = await ethers.getContractAt('PoolAUSD', poolAddress);
+
+  // await handleTransactionResult(
+  //   await pool.deposit('1000' + '0'.repeat(18), { value: '1000' + '0'.repeat(18) }),
+  // );
 }
 
 main().catch((error) => {

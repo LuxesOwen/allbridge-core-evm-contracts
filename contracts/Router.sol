@@ -92,16 +92,16 @@ abstract contract Router is Ownable, IRouter {
         uint fromAmount,
         bytes32 fromToken,
         bytes32 toToken
-    ) public pure returns (uint toAmount) {
+    ) public view returns (uint toAmount) {
         address fromTokenAddresss = address(uint160(uint(fromToken)));
         address toTokenAddress = address(uint160(uint(toToken)));
         require(fromTokenAddresss != address(0) || toTokenAddress != address(0), "Router: all native token");
         if (fromTokenAddresss == address(0)) {
             // native token to USD
-            toAmount = fromAmount / (10 ** 12) / 5;
+            toAmount = fromAmount / (10 ** 12) * pools[fromToken].usdToAlgRatio() / 10;
         } else if (toTokenAddress == address(0)) {
             // USD to native token
-            toAmount = fromAmount * (10 ** 12) * 5;
+            toAmount = fromAmount * (10 ** 12) * 10 / pools[toToken].usdToAlgRatio();
         } else {
             toAmount = fromAmount;
         }
@@ -160,9 +160,6 @@ abstract contract Router is Ownable, IRouter {
     ) internal returns (uint) {
         Pool tokenPool = pools[token];
         require(address(tokenPool) != address(0), "Router: no receive pool");
-        if (address(uint160(uint(token))) == address(0)) {
-            vUsdAmount = getSwapValue(vUsdAmount, bytes32(uint256(uint160(address(1))) << 96), token);
-        }
         return tokenPool.swapFromVUsd(recipient, vUsdAmount, receiveAmountMin, recipient == rebalancer);
     }
 
@@ -176,10 +173,6 @@ abstract contract Router is Ownable, IRouter {
         } else {
             ERC20(address(uint160(uint(token)))).safeTransferFrom(user, address(pool), amount);
         }
-        uint vUsdAmount = pool.swapToVUsd(user, amount, user == rebalancer);
-        if (tokenAddress == address(0)) {
-            vUsdAmount = getSwapValue(vUsdAmount, token, bytes32(uint256(uint160(address(1))) << 96));
-        }
-        return vUsdAmount;
+        return pool.swapToVUsd(user, amount, user == rebalancer);
     }
 }

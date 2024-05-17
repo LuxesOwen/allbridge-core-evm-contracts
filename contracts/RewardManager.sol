@@ -100,18 +100,18 @@ contract RewardManager is Ownable, ERC20 {
      * @dev Deposits LP amount for the user, updates user reward debt and pays pending rewards.
      */
     function _depositLp(address to, uint lpAmount) internal {
-        uint pending;
-        uint userLpAmount = balanceOf(to); // Gas optimization
-        if (userLpAmount > 0) {
-            pending = ((userLpAmount * accRewardPerShareP) >> P) - userRewardDebt[to];
-        }
-        userLpAmount += lpAmount;
+        // uint pending;
+        // uint userLpAmount = balanceOf(to); // Gas optimization
+        // if (userLpAmount > 0) {
+        //     pending = ((userLpAmount * accRewardPerShareP) >> P) - userRewardDebt[to];
+        // }
+        // userLpAmount += lpAmount;
         _mint(to, lpAmount);
-        userRewardDebt[to] = (userLpAmount * accRewardPerShareP) >> P;
-        if (pending > 0) {
-            token.safeTransfer(to, pending);
-            emit RewardsClaimed(to, pending);
-        }
+        // userRewardDebt[to] = (userLpAmount * accRewardPerShareP) >> P;
+        // if (pending > 0) {
+        //     token.safeTransfer(to, pending);
+        //     emit RewardsClaimed(to, pending);
+        // }
         emit Deposit(to, lpAmount);
     }
 
@@ -121,17 +121,17 @@ contract RewardManager is Ownable, ERC20 {
     function _withdrawLp(address from, uint lpAmount) internal {
         uint userLpAmount = balanceOf(from); // Gas optimization
         require(userLpAmount >= lpAmount, "RewardManager: not enough amount");
-        uint pending;
-        if (userLpAmount > 0) {
-            pending = ((userLpAmount * accRewardPerShareP) >> P) - userRewardDebt[from];
-        }
-        userLpAmount -= lpAmount;
+        // uint pending;
+        // if (userLpAmount > 0) {
+        //     pending = ((userLpAmount * accRewardPerShareP) >> P) - userRewardDebt[from];
+        // }
+        // userLpAmount -= lpAmount;
         _burn(from, lpAmount);
-        userRewardDebt[from] = (userLpAmount * accRewardPerShareP) >> P;
-        if (pending > 0) {
-            token.safeTransfer(from, pending);
-            emit RewardsClaimed(from, pending);
-        }
+        // userRewardDebt[from] = (userLpAmount * accRewardPerShareP) >> P;
+        // if (pending > 0) {
+        //     token.safeTransfer(from, pending);
+        //     emit RewardsClaimed(from, pending);
+        // }
         emit Withdraw(from, lpAmount);
     }
 
