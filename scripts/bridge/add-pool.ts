@@ -12,8 +12,8 @@ async function main() {
     throw new Error('No bridge address');
   }
 
-  // const tokenAddress = "0x0000000000000000000000000000000000000000";
-  const tokenAddress = process.env.TOKEN_ADDRESS;
+  const tokenAddress = "0x0000000000000000000000000000000000000000";
+  // const tokenAddress = process.env.TOKEN_ADDRESS;
   if (!tokenAddress) {
     throw new Error('No token address');
   }

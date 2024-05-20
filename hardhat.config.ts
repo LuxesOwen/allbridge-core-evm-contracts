@@ -21,6 +21,7 @@ const baseNetwork = {
       ? [process.env.PRIVATE_KEY]
       : undefined,
   timeout: 60000,
+  gasPrice: 50000000   // algen l1 mainnet needed
 };
 
 const config: HardhatUserConfig = {
